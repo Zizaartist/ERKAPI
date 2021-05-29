@@ -34,23 +34,6 @@ namespace ERKAPI
         {
             modelBuilder.HasAnnotation("Relational:Collation", "SQL_Latin1_General_CP1_CI_AS");
 
-            modelBuilder.Entity<BlacklistedPost>(entity =>
-            {
-                entity.HasKey(e => new { e.UserId, e.PostId });
-
-                entity.ToTable("BlacklistedPost");
-
-                entity.HasOne(d => d.Post)
-                    .WithMany(p => p.BlacklistedPosts)
-                    .HasForeignKey(d => d.PostId)
-                    .HasConstraintName("FK_BlacklistedPost_Post");
-
-                entity.HasOne(d => d.User)
-                    .WithMany(p => p.BlacklistedPosts)
-                    .HasForeignKey(d => d.UserId)
-                    .HasConstraintName("FK_BlacklistedPost_User");
-            });
-
             modelBuilder.Entity<Comment>(entity =>
             {
                 entity.ToTable("Comment");
@@ -128,6 +111,10 @@ namespace ERKAPI
 
                 entity.Property(e => e.CreatedDate).HasColumnType("datetime");
 
+                entity.Property(e => e.Likes).IsRequired();
+
+                entity.Property(e => e.Dislikes).IsRequired();
+
                 entity.HasOne(d => d.Author)
                     .WithMany(p => p.Posts)
                     .HasForeignKey(d => d.AuthorId)
@@ -135,7 +122,7 @@ namespace ERKAPI
                     .HasConstraintName("FK_Post_User");
 
                 entity.HasOne(d => d.Repost)
-                    .WithMany(p => p.InverseRepost)
+                    .WithMany(p => p.Reposts)
                     .HasForeignKey(d => d.RepostId)
                     .HasConstraintName("FK_Post_Post");
             });
@@ -152,7 +139,7 @@ namespace ERKAPI
                     .HasMaxLength(4000);
 
                 entity.HasOne(d => d.Post)
-                    .WithOne(p => p.PostDatum)
+                    .WithOne(p => p.PostData)
                     .HasForeignKey<PostData>(d => d.PostId)
                     .HasConstraintName("FK_PostData_Post");
             });
@@ -221,9 +208,28 @@ namespace ERKAPI
                         .HasOne(x => x.SubscribedTo)
                         .WithMany(x => x.SubscriptionsEntities)
                         .HasForeignKey(x => x.SubscribedToId),
-                    e => {
+                    e =>
+                    {
                         e.HasKey(x => new { x.SubscriberId, x.SubscribedToId });
                         e.ToTable("Subscription");
+                    }
+                );
+
+                entity.HasMany(e => e.BlacklistedPosts)
+                    .WithMany(e => e.UsersWhoBlacklisted)
+                    .UsingEntity<BlacklistedPost>(
+                    e => e
+                        .HasOne(x => x.Post)
+                        .WithMany(x => x.BlacklistedPostEntities)
+                        .HasForeignKey(x => x.PostId),
+                    e => e
+                        .HasOne(x => x.User)
+                        .WithMany(x => x.BlacklistedPostEntities)
+                        .HasForeignKey(x => x.UserId),
+                    e =>
+                    {
+                        e.HasKey(x => new { x.UserId, x.PostId });
+                        e.ToTable("BlacklistedPost");
                     }
                 );
             });

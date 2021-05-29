@@ -12,7 +12,8 @@ namespace ERKAPI.Models
     {
         public User()
         {
-            BlacklistedPosts = new HashSet<BlacklistedPost>();
+            BlacklistedPostEntities = new HashSet<BlacklistedPost>();
+            BlacklistedPosts = new HashSet<Post>();
             Comments = new HashSet<Comment>();
             DiasporaRequests = new HashSet<DiasporaRequest>();
             Opinions = new HashSet<Opinion>();
@@ -41,26 +42,41 @@ namespace ERKAPI.Models
         public int SubscriptionCount { get; set; }
         public int SubscriberCount { get; set; }
 
-        public virtual ICollection<BlacklistedPost> BlacklistedPosts { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<BlacklistedPost> BlacklistedPostEntities { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<Post> BlacklistedPosts { get; set; }
+        [JsonIgnore]
         public virtual ICollection<Comment> Comments { get; set; }
+        [JsonIgnore]
         public virtual ICollection<DiasporaRequest> DiasporaRequests { get; set; }
+        [JsonIgnore]
         public virtual ICollection<Opinion> Opinions { get; set; }
+        [JsonIgnore]
         public virtual ICollection<Post> Posts { get; set; }
+        [JsonIgnore]
         public virtual ICollection<Report> Reports { get; set; }
         [JsonIgnore]
         public virtual ICollection<Subscription> SubscriptionsEntities { get; set; }
         [JsonIgnore]
         public virtual ICollection<Subscription> SubscribersEntities { get; set; }
+        [JsonIgnore]
         public virtual ICollection<User> Subscriptions { get; set; }
+        [JsonIgnore]
         public virtual ICollection<User> Subscribers { get; set; }
 
         [JsonIgnore]
         [NotMapped]
         public bool ShowSensitiveData { get; set; } = false;
+        [JsonIgnore]
+        [NotMapped]
+        public bool ShowSubCount { get; set; } = false;
 
         public bool ShouldSerializePhone() => ShowSensitiveData;
         public bool ShouldSerializeEmail() => ShowSensitiveData;
         public bool ShouldSerializeShowDoB() => ShowSensitiveData;
+        public bool ShouldSerializeSubscriptionCount() => ShowSubCount;
+        public bool ShouldSerializeSubscriberCount() => ShowSubCount;
         public bool ShouldSerializeDateOfBirth() => ShowDoB;
 
     }

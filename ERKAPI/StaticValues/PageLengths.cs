@@ -7,11 +7,10 @@ namespace ERKAPI.StaticValues
 {
     public class PageLengths
     {
-        public const int BRAND_LENGTH = 7;
-        public const int PRODUCT_LENGTH = 16;
-        public const int ORDER_LENGTH = 7;
-        public const int POINTREGISTER_LENGTH = 15;
-        public const int REPORT_LENGTH = 10;
-        public const int REVIEW_LEGNTH = 10;
+        public const int POSTS_PAGE = 7;
+        public const int COMMENTS_PAGE = 15;
+
+
+        public const int POST_TEXT_MAX = 200;
     }
 }

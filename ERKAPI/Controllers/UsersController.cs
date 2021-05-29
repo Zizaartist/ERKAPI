@@ -37,6 +37,7 @@ namespace ERKAPI.Controllers
                 return NotFound();
             }
 
+            user.ShowSubCount = true;
             return user;
         }
 
