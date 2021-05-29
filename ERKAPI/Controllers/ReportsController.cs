@@ -11,27 +11,27 @@ namespace ERKAPI.Controllers
     [Route("api/[controller]")]
     [Authorize]
     [ApiController]
-    public class QuestionsController : Controller
+    public class ReportsController : Controller
     {
         private readonly ERKContext _context;
 
-        public QuestionsController(ERKContext context)
+        public ReportsController(ERKContext context)
         {
             _context = context;
         }
 
         /// <summary>
-        /// Создает новый вопрос
+        /// Создает новую жалобу
         /// </summary>
-        // POST: api/Questions/
+        // POST: api/Reports/
         [HttpPost]
-        public ActionResult PostQuestion(Question question)
+        public ActionResult PostReports(Report report) 
         {
             var myId = this.GetMyId();
 
-            question.AuthorId = myId;
+            report.AuthorId = myId;
 
-            _context.Questions.Add(question);
+            _context.Reports.Add(report);
             _context.SaveChanges();
 
             return Ok();

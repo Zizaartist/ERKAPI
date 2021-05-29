@@ -19,6 +19,7 @@ namespace ERKAPI.Models
             Opinions = new HashSet<Opinion>();
             Posts = new HashSet<Post>();
             Reports = new HashSet<Report>();
+            Questions = new HashSet<Question>();
             SubscriptionsEntities = new HashSet<Subscription>();
             SubscribersEntities = new HashSet<Subscription>();
             Subscribers = new HashSet<User>();
@@ -56,6 +57,8 @@ namespace ERKAPI.Models
         public virtual ICollection<Post> Posts { get; set; }
         [JsonIgnore]
         public virtual ICollection<Report> Reports { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<Question> Questions { get; set; }
         [JsonIgnore]
         public virtual ICollection<Subscription> SubscriptionsEntities { get; set; }
         [JsonIgnore]

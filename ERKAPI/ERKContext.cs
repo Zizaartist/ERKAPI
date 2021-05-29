@@ -27,6 +27,7 @@ namespace ERKAPI
         public virtual DbSet<PostData> PostData { get; set; }
         public virtual DbSet<PostImage> PostImages { get; set; }
         public virtual DbSet<Report> Reports { get; set; }
+        public virtual DbSet<Question> Questions { get; set; }
         public virtual DbSet<Subscription> Subscriptions { get; set; }
         public virtual DbSet<User> Users { get; set; }
 
@@ -171,7 +172,7 @@ namespace ERKAPI
                 entity.HasOne(d => d.Post)
                     .WithMany(p => p.Reports)
                     .HasForeignKey(d => d.PostId)
-                    .OnDelete(DeleteBehavior.SetNull)
+                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("FK_Report_Post");
             });
 
@@ -232,6 +233,16 @@ namespace ERKAPI
                         e.ToTable("BlacklistedPost");
                     }
                 );
+            });
+
+            modelBuilder.Entity<Question>(entity =>
+            {
+                entity.ToTable("Question");
+
+                entity.HasOne(d => d.Author)
+                    .WithMany(p => p.Questions)
+                    .HasForeignKey(d => d.AuthorId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             OnModelCreatingPartial(modelBuilder);
