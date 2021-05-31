@@ -346,7 +346,7 @@ namespace ERKAPI.Controllers
                 ShowDoB = true,
                 Avatar = userData.Avatar,
                 CountryId = userData.CountryId,
-                CityId = userData.CityId
+                CityId = userData.CityId 
             };
 
             _context.Users.Add(newUser);
