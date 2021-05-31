@@ -42,7 +42,11 @@ namespace ERKAPI.Models
         public string Avatar { get; set; }
         public int SubscriptionCount { get; set; }
         public int SubscriberCount { get; set; }
+        public int CountryId { get; set; }
+        public int CityId { get; set; }
 
+        public Country Country { get; set; }
+        public City City { get; set; }
         [JsonIgnore]
         public virtual ICollection<BlacklistedPost> BlacklistedPostEntities { get; set; }
         [JsonIgnore]
@@ -78,6 +82,10 @@ namespace ERKAPI.Models
         public bool ShouldSerializePhone() => ShowSensitiveData;
         public bool ShouldSerializeEmail() => ShowSensitiveData;
         public bool ShouldSerializeShowDoB() => ShowSensitiveData;
+        public bool ShouldSerializeCountry() => ShowSensitiveData;
+        public bool ShouldSerializeCountryId() => ShowSensitiveData;
+        public bool ShouldSerializeCity() => ShowSensitiveData;
+        public bool ShouldSerializeCityId() => ShowSensitiveData;
         public bool ShouldSerializeSubscriptionCount() => ShowSubCount;
         public bool ShouldSerializeSubscriberCount() => ShowSubCount;
         public bool ShouldSerializeDateOfBirth() => ShowDoB;

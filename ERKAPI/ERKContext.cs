@@ -30,6 +30,8 @@ namespace ERKAPI
         public virtual DbSet<Question> Questions { get; set; }
         public virtual DbSet<Subscription> Subscriptions { get; set; }
         public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<Country> Countries { get; set; }
+        public virtual DbSet<City> Cities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -198,6 +200,16 @@ namespace ERKAPI
 
                 entity.Property(e => e.SubscriptionCount).IsRequired();
 
+                entity.HasOne(e => e.Country)
+                    .WithMany(e => e.Users)
+                    .HasForeignKey(e => e.CountryId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasOne(e => e.City)
+                    .WithMany(e => e.Users)
+                    .HasForeignKey(e => e.CityId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
                 entity.HasMany(e => e.Subscribers)
                     .WithMany(e => e.Subscriptions)
                     .UsingEntity<Subscription>(
@@ -243,6 +255,25 @@ namespace ERKAPI
                     .WithMany(p => p.Questions)
                     .HasForeignKey(d => d.AuthorId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Country>(entity => 
+            {
+                entity.ToTable("Country");
+
+                entity.HasKey(e => e.CountryId);
+            });
+
+            modelBuilder.Entity<City>(entity =>
+            {
+                entity.ToTable("City");
+
+                entity.HasKey(e => e.CityId);
+
+                entity.HasOne(e => e.Country)
+                    .WithMany(e => e.Cities)
+                    .HasForeignKey(e => e.CountryId)
+                    .OnDelete(DeleteBehavior.NoAction);
             });
 
             OnModelCreatingPartial(modelBuilder);

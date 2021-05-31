@@ -344,7 +344,9 @@ namespace ERKAPI.Controllers
                 DateOfBirth = userData.DateOfBirth,
                 Email = userData.Email,
                 ShowDoB = true,
-                Avatar = userData.Avatar
+                Avatar = userData.Avatar,
+                CountryId = userData.CountryId,
+                CityId = userData.CityId
             };
 
             _context.Users.Add(newUser);

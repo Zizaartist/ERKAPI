@@ -72,10 +72,14 @@ namespace ERKAPI.Controllers
                 if (subscriptionExists)
                 {
                     _context.Subscriptions.Remove(subscription);
+                    subscriptionUser.SubscriberCount--;
+                    mySelf.SubscriptionCount--;
                 }
                 else
                 {
                     subscriptionUser.Subscribers.Add(mySelf);
+                    subscriptionUser.SubscriberCount++;
+                    mySelf.SubscriptionCount++;
                 }
                 subscriptionExists = !subscriptionExists;
             }
@@ -86,12 +90,16 @@ namespace ERKAPI.Controllers
                 if (forceState.Value && !subscriptionExists)
                 {
                     subscriptionUser.Subscribers.Add(mySelf);
+                    subscriptionUser.SubscriberCount++;
+                    mySelf.SubscriptionCount++;
                     subscriptionExists = true;
                 }
                 //Отписаться, сейчас подписан
                 else if (!forceState.Value && subscriptionExists)
                 {
                     _context.Subscriptions.Remove(subscription);
+                    subscriptionUser.SubscriberCount--;
+                    mySelf.SubscriptionCount--;
                     subscriptionExists = false;
                 }
             }
