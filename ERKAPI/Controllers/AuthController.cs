@@ -34,56 +34,8 @@ namespace ERKAPI.Controllers
             _clientFactory = clientFactory;
         }
 
-        /// <summary>
-        /// Получение пользовательского access токена
-        /// в случае отсутствия пользователя в бд, создается новый
-        /// </summary>
-        /// <returns>Сериализированный токен и корректный номер телефона</returns>
         // POST: api/Auth/Token/?phone=79991745473&code=3667
         [Route("Token")]
-        [HttpPost]
-        public ActionResult<Token> GetToken([Phone] string phone, string code)
-        {
-            var formattedPhone = Functions.convertNormalPhoneNumber(phone);
-
-            var codeValidationErrorText = ValidateCode(formattedPhone, code);
-            if (codeValidationErrorText != null)
-            {
-                return BadRequest(new { errorText = codeValidationErrorText });
-            }
-
-            //Телефон и код проверены, теперь регистрация
-
-            var existingUser = _context.Users.FirstOrDefault(user => user.Phone == formattedPhone);
-            if (existingUser == null) 
-            {
-                return BadRequest(new { errorText = "Пользователь не найден" });
-            }
-
-            //Выдача токена
-
-            ClaimsIdentity identity;
-            try
-            {
-                identity = GetIdentity(existingUser);
-            }
-            catch (Exception _ex)
-            {
-                _logger.LogWarning($"Ошибка при попытке получить identity - {_ex}");
-                return BadRequest(new { errorText = "Unexpected error." });
-            }
-
-            // создаем JWT-токен
-            var jwt = new JwtSecurityToken(
-                    claims: identity.Claims,
-                    signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
-            var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
-
-            return new Token { AccessToken = encodedJwt, Username = identity.Name };
-        }
-
-        // POST: api/Auth/Register/?phone=79991745473&code=3667
-        [Route("Register")]
         [HttpPost]
         public ActionResult<Token> GetToken([Phone] string phone, string code, User userData)
         {
@@ -98,26 +50,14 @@ namespace ERKAPI.Controllers
             //Телефон и код проверены, теперь регистрация
 
             var existingUser = _context.Users.FirstOrDefault(user => user.Phone == formattedPhone);
-            if (existingUser != null)
+            if (existingUser == null)
             {
-                return BadRequest(new { errorText = "Пользователь с таким номером уже существует" });
+                existingUser = RegisterNewUser(formattedPhone, userData);
             }
-            existingUser = RegisterNewUser(formattedPhone, userData);
 
             //Выдача токена
 
-            ClaimsIdentity identity;
-            try
-            {
-                identity = GetIdentity(existingUser);
-            }
-            catch (Exception _ex)
-            {
-                _logger.LogWarning($"Ошибка при попытке получить identity - {_ex}");
-                return BadRequest(new { errorText = "Unexpected error." });
-            }
-
-            // создаем JWT-токен
+            var identity = GetIdentity(user);
             var jwt = new JwtSecurityToken(
                     claims: identity.Claims,
                     signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
@@ -125,16 +65,6 @@ namespace ERKAPI.Controllers
 
             return new Token { AccessToken = encodedJwt, Username = identity.Name };
         }
-
-        /// <summary>
-        /// Проверяет существует ли пользователь с таким номером
-        /// </summary>
-        /// <param name="phone"></param>
-        /// <returns></returns>
-        // GET: api/Auth/IsRegistered/?phone=79991745473
-        [Route("IsRegistered")]
-        [HttpGet]
-        public ActionResult<bool> IsRegistered([Phone] string phone) => _context.Users.Any(user => user.Phone == Functions.convertNormalPhoneNumber(phone));
 
         /// <summary>
         /// Отправляет СМС код на указанный номер и создает временный кэш с кодом для проверки

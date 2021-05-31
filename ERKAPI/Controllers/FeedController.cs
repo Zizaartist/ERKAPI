@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace ERKAPI.Controllers
 {
-    [Route("api/")]
+    [Route("api")]
     [Authorize]
     [ApiController]
     public class FeedController : Controller
@@ -84,7 +84,7 @@ namespace ERKAPI.Controllers
             return result;
         }
 
-        // GET: api/Feed/Profile/3/2
+        // GET: api/Profile/3/2
         [Route("Profile/{id}/{page}")]
         [HttpGet]
         public ActionResult<IEnumerable<Post>> GetProfilePosts(int id, int page)

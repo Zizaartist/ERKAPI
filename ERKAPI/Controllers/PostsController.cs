@@ -75,7 +75,7 @@ namespace ERKAPI.Controllers
         /// </summary>
         /// <param name="id">Id поста</param>
         /// <param name="opinion">Желаемое состояние лайка/дизлайка</param>
-        //PUT: api/Posts/ChangeOpinion/?opinion=True
+        //PUT: api/Posts/ChangeOpinion/3/?opinion=True
         [Route("ChangeOpinion/{id}")]
         [HttpPut]
         public ActionResult ChangeOpinion(int id, bool? opinion = null)

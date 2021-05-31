@@ -47,8 +47,8 @@ namespace ERKAPI.Controllers
         /// <param name="id"></param>
         /// <param name="forceState"></param>
         /// <returns>Текущее состояние подписки</returns>
-        // PATCH: api/Users/ToggleSub/3/False
-        [Route("ToggleSub/{id}/{forceState:bool?}")]
+        // PATCH: api/Users/ToggleSub/3?foreState=False
+        [Route("ToggleSub/{id}")]
         [HttpPut]
         public ActionResult<bool> ToggleSubscription(int id, bool? forceState = null)
         {
