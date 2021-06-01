@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 namespace ERKAPI.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class CommentsController : Controller
     {

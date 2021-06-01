@@ -15,6 +15,7 @@ namespace ERKAPI.Models
 
         public int CityId { get; set; }
         public string Name { get; set; }
+        [JsonIgnore]
         public int CountryId { get; set; }
 
         [JsonIgnore]

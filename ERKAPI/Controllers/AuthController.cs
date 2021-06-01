@@ -57,7 +57,7 @@ namespace ERKAPI.Controllers
 
             //Выдача токена
 
-            var identity = GetIdentity(user);
+            var identity = GetIdentity(existingUser);
             var jwt = new JwtSecurityToken(
                     claims: identity.Claims,
                     signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
@@ -114,7 +114,7 @@ namespace ERKAPI.Controllers
         // POST: api/Auth/CodeCheck/?code=3344&phone=79991745473
         [Route("CodeCheck")]
         [HttpPost]
-        public IActionResult CodeCheck(string code, [Phone] string phone)
+        public ActionResult<bool> CodeCheck(string code, [Phone] string phone)
         {
             var formattedPhone = Functions.convertNormalPhoneNumber(phone);
 
@@ -123,7 +123,8 @@ namespace ERKAPI.Controllers
             {
                 return BadRequest(new { errorText = codeValidationErrorText });
             }
-            return Ok();
+
+           return _context.Users.Any(user => user.Phone == formattedPhone);
         }
 
         // PATCH: api/Auth/ChangeNumber/?newPhone=79991745473&code=1333
