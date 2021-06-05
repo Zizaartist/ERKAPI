@@ -27,7 +27,7 @@ namespace ERKAPI.Controllers
         // GET: api/Feed/2
         [Route("Feed/{page}")]
         [HttpGet]
-        public ActionResult<IEnumerable<Post>> GetMyFeed(int page) 
+        public ActionResult<IEnumerable<Post>> GetMyFeed(int page)
         {
             var myId = this.GetMyId();
 
@@ -37,8 +37,8 @@ namespace ERKAPI.Controllers
             var blacklisted = _context.BlacklistedPosts.Where(post => post.UserId == myId)
                                                         .Select(post => post.PostId);
 
-            var posts = InitialQueryWithoutReposts.Where(post => subscriptionIds.Contains(post.AuthorId.Value))
-                                                .Where(post => !blacklisted.Contains(post.PostId));
+            var posts = InitialQueryWithoutReposts(myId).Where(post => subscriptionIds.Contains(post.AuthorId.Value))
+                                                        .Where(post => !blacklisted.Contains(post.PostId));
 
             posts = SortByDateAndPaginate(posts, page);
 
@@ -68,12 +68,12 @@ namespace ERKAPI.Controllers
             var blacklisted = _context.BlacklistedPosts.Where(post => post.UserId == myId)
                                                         .Select(post => post.PostId);
 
-            var posts = InitialQueryWithoutReposts.Where(post => (post.PostData != null ? post.PostData.Text.ToUpper().Contains(searchCriteriaCaps) : false))
-                                                .Where(post => !blacklisted.Contains(post.PostId));
+            var posts = InitialQueryWithoutReposts(myId).Where(post => (post.PostData != null ? post.PostData.Text.ToUpper().Contains(searchCriteriaCaps) : false))
+                                                        .Where(post => !blacklisted.Contains(post.PostId));
 
             posts = SortByDateAndPaginate(posts, page);
 
-            if (!posts.Any()) 
+            if (!posts.Any())
             {
                 return NotFound();
             }
@@ -94,8 +94,8 @@ namespace ERKAPI.Controllers
             var blacklisted = _context.BlacklistedPosts.Where(bp => bp.UserId == myId)
                                                         .Select(bp => bp.PostId);
 
-            var posts = InitialQueryWithReposts.Where(post => post.AuthorId == id)
-                                                .Where(post => !blacklisted.Contains(post.PostId));
+            var posts = InitialQueryWithReposts(myId).Where(post => post.AuthorId == id)
+                                                    .Where(post => !blacklisted.Contains(post.PostId));
 
             posts = SortByDateAndPaginate(posts, page);
 
@@ -106,6 +106,7 @@ namespace ERKAPI.Controllers
 
             var result = posts.ToList();
             TrimTexts(result);
+            MarkReposts(result, myId);
 
             return result;
         }
@@ -115,37 +116,51 @@ namespace ERKAPI.Controllers
             .Skip(PageLengths.POSTS_PAGE * page)
             .Take(PageLengths.POSTS_PAGE);
 
-        private IQueryable<Post> InitialQueryWithoutReposts => _context.Posts
+        private IQueryable<Post> InitialQueryWithoutReposts(int myId) => _context.Posts
             .Include(post => post.PostData)
                 .ThenInclude(data => data.PostImages)
             .Include(post => post.Author)
+            .Include(post => post.Opinions.Where(opinion => opinion.UserId == myId))
+            .Include(post => post.Reposts.Where(repost => repost.AuthorId == myId))
             .Where(post => post.RepostId == null);
 
-        private IQueryable<Post> InitialQueryWithReposts => _context.Posts
+        private IQueryable<Post> InitialQueryWithReposts(int myId) => _context.Posts
             .Include(post => post.PostData)
                 .ThenInclude(data => data.PostImages)
             .Include(post => post.Author)
+            .Include(post => post.Opinions.Where(opinion => opinion.UserId == myId))
+            .Include(post => post.Reposts.Where(repost => repost.AuthorId == myId))
             .Include(post => post.Repost)
                 .ThenInclude(repost => repost.PostData)
                     .ThenInclude(data => data.PostImages)
             .Include(post => post.Repost)
-                .ThenInclude(repost => repost.Author);
+                .ThenInclude(repost => repost.Author)
+            .Include(post => post.Repost)
+                .ThenInclude(repost => repost.Reposts.Where(repost => repost.AuthorId == myId));
 
-        private void TrimTexts(IEnumerable<Post> result) 
+        private void TrimTexts(IEnumerable<Post> result)
         {
-            foreach (var post in result) 
+            foreach (var post in result)
             {
-                if (post.Repost != null)
+                if (post.IsOriginalPost)
                 {
-                    var text = post.Repost.PostData.Text;
-                    post.Repost.PostData.Text = text?.Substring(0, Math.Min(text.Length, PageLengths.POST_TEXT_MAX));
+                    var text = post.PostData.Text;
+                    post.PostData.HasHiddenText = text.Length > PageLengths.POST_TEXT_MAX;
+                    post.PostData.Text = text?.Substring(0, Math.Min(text.Length, PageLengths.POST_TEXT_MAX));
                 }
                 else
                 {
-                    var text = post.PostData.Text;
-                    post.PostData.Text = text?.Substring(0, Math.Min(text.Length, PageLengths.POST_TEXT_MAX));
+                    var text = post.Repost.PostData.Text;
+                    post.Repost.PostData.HasHiddenText = text.Length > PageLengths.POST_TEXT_MAX;
+                    post.Repost.PostData.Text = text?.Substring(0, Math.Min(text.Length, PageLengths.POST_TEXT_MAX));
                 }
             }
+        }
+
+        private void MarkReposts(IEnumerable<Post> result, int myId) 
+        {
+            foreach (var post in result)
+                post.MyId = myId;
         }
     }
 }

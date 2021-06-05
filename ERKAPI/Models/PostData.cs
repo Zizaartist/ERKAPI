@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 
 #nullable disable
@@ -27,6 +28,11 @@ namespace ERKAPI.Models
         public virtual Post Post { get; set; }
         public virtual ICollection<PostImage> PostImages { get; set; }
 
+        [NotMapped]
+        public bool HasHiddenText { get; set; } = false;
+
+
         public bool ShouldSerializePostImages() => PostImages.Any();
+        public bool ShouldSerializeHasHiddenText() => HasHiddenText;
     }
 }

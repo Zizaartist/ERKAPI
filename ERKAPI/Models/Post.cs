@@ -44,7 +44,14 @@ namespace ERKAPI.Models
 
         [JsonIgnore]
         [NotMapped]
-        public bool IsOriginalPost { get; set; } = true;
+        public bool IsOriginalPost { get => Repost == null; }
+        [JsonIgnore]
+        [NotMapped]
+        public int MyId { get; set; } = -1;
+        [NotMapped]
+        public bool? MyOpinion { get => Opinions.Any() ? Opinions.First().LikeDislike : null; }
+        [NotMapped]
+        public bool RepostedByMe { get => IsOriginalPost ? Reposts.Any(repost => repost.AuthorId == MyId) : Repost.Reposts.Any(repost => repost.AuthorId == MyId); }
         public bool ShouldSerializeLikes() => IsOriginalPost;
         public bool ShouldSerializeDislikes() => IsOriginalPost;
         public bool ShouldSerializeCreatedDate() => IsOriginalPost;

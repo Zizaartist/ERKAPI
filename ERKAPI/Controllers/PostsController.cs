@@ -28,6 +28,8 @@ namespace ERKAPI.Controllers
         [HttpGet]
         public ActionResult<Post> GetFullPost(int id)
         {
+            var myId = this.GetMyId();
+
             var post = _context.Posts.Include(post => post.PostData)
                                         .ThenInclude(data => data.PostImages)
                                     .Include(post => post.Repost)
@@ -35,7 +37,11 @@ namespace ERKAPI.Controllers
                                             .ThenInclude(data => data.PostImages)
                                     .Include(post => post.Repost)
                                         .ThenInclude(repost => repost.Author)
+                                    .Include(post => post.Repost)
+                                        .ThenInclude(repost => repost.Reposts.Where(repost => repost.AuthorId == myId))
                                     .Include(post => post.Author)
+                                    .Include(post => post.Opinions.Where(opinion => opinion.UserId == myId)) //should countain just 1 record if any at all
+                                    .Include(post => post.Reposts.Where(repost => repost.AuthorId == myId))
                                     .FirstOrDefault(post => post.PostId == id);
 
             if (post == null)
@@ -43,7 +49,7 @@ namespace ERKAPI.Controllers
                 return NotFound();
             }
 
-            if (post.Repost != null) post.Repost.IsOriginalPost = false;
+            post.MyId = myId;
 
             return post;
         }
