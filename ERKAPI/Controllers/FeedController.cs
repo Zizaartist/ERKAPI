@@ -63,13 +63,19 @@ namespace ERKAPI.Controllers
         {
             var myId = this.GetMyId();
 
-            var searchCriteriaCaps = searchCriteria.ToUpper();
+            var searchCriteriaCaps = searchCriteria?.ToUpper();
 
             var blacklisted = _context.BlacklistedPosts.Where(post => post.UserId == myId)
                                                         .Select(post => post.PostId);
 
-            var posts = InitialQueryWithoutReposts(myId).Where(post => (post.PostData != null ? post.PostData.Text.ToUpper().Contains(searchCriteriaCaps) : false))
-                                                        .Where(post => !blacklisted.Contains(post.PostId));
+            var posts = InitialQueryWithoutReposts(myId);
+
+            if (!string.IsNullOrEmpty(searchCriteria))
+            {
+                posts = posts.Where(post => (post.PostData != null ? post.PostData.Text.ToUpper().Contains(searchCriteriaCaps) : false));                                   
+            }
+
+            posts = posts.Where(post => !blacklisted.Contains(post.PostId));
 
             posts = SortByDateAndPaginate(posts, page);
 
