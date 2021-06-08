@@ -40,6 +40,7 @@ namespace ERKAPI.Controllers
                                     .Include(post => post.Repost)
                                         .ThenInclude(repost => repost.Reposts.Where(repost => repost.AuthorId == myId))
                                     .Include(post => post.Author)
+                                        .ThenInclude(author => author.Subscribers.Where(sub => sub.UserId == myId))
                                     .Include(post => post.Opinions.Where(opinion => opinion.UserId == myId)) //should countain just 1 record if any at all
                                     .Include(post => post.Reposts.Where(repost => repost.AuthorId == myId))
                                     .FirstOrDefault(post => post.PostId == id);
@@ -103,6 +104,7 @@ namespace ERKAPI.Controllers
                 _context.Opinions.Add(new Opinion { LikeDislike = opinion.Value,
                                                     UserId = myId,
                                                     PostId = id });
+                RecountOpinions(post, opinion.Value, true);
             }
             //Если мнение существует...
             else if(existingOpinion != null)
@@ -110,12 +112,16 @@ namespace ERKAPI.Controllers
                 //... но его нужно удалить
                 if (opinion == null)
                 {
+                    bool initialValue = existingOpinion.LikeDislike;
                     _context.Opinions.Remove(existingOpinion);
+                    RecountOpinions(post, initialValue, false);
                 }
                 //... но оно отличается от желаемого
                 else if (opinion != existingOpinion.LikeDislike)
                 {
                     existingOpinion.LikeDislike = opinion.Value;
+                    RecountOpinions(post, true, opinion.Value);
+                    RecountOpinions(post, false, !opinion.Value);
                 }
             }
 
@@ -216,6 +222,26 @@ namespace ERKAPI.Controllers
             _context.SaveChanges();
 
             return Ok();
+        }
+
+        /// <summary>
+        /// Пересчитывает количество лайков/дизлайков
+        /// </summary>
+        /// <param name="post">Tracked сущность поста</param>
+        /// <param name="changedValue">Какой тип opinion изменился (добавился/удалился)</param>
+        private void RecountOpinions(Post post, bool changedValue, bool addedOrRemoved)
+        {
+            //Пересчет лайков/дизлайков
+            if (changedValue)
+            {
+                post.Likes = _context.Opinions.Where(opinion => opinion.PostId == post.PostId && opinion.LikeDislike)
+                                            .Count() + (addedOrRemoved ? 1 : -1);
+            }
+            else
+            {
+                post.Dislikes = _context.Opinions.Where(opinion => opinion.PostId == post.PostId && !opinion.LikeDislike)
+                                                .Count() + (addedOrRemoved ? 1 : -1);
+            }
         }
     }
 }

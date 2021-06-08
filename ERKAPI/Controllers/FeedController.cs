@@ -49,6 +49,7 @@ namespace ERKAPI.Controllers
 
             var result = posts.ToList();
             TrimTexts(result);
+            MarkRepostsAndAuthorSubs(result, myId);
 
             return result;
         }
@@ -86,6 +87,7 @@ namespace ERKAPI.Controllers
 
             var result = posts.ToList();
             TrimTexts(result);
+            MarkRepostsAndAuthorSubs(result, myId);
 
             return result;
         }
@@ -112,7 +114,7 @@ namespace ERKAPI.Controllers
 
             var result = posts.ToList();
             TrimTexts(result);
-            MarkReposts(result, myId);
+            MarkRepostsAndAuthorSubs(result, myId);
 
             return result;
         }
@@ -126,6 +128,7 @@ namespace ERKAPI.Controllers
             .Include(post => post.PostData)
                 .ThenInclude(data => data.PostImages)
             .Include(post => post.Author)
+                .ThenInclude(author => author.Subscribers.Where(sub => sub.UserId == myId))
             .Include(post => post.Opinions.Where(opinion => opinion.UserId == myId))
             .Include(post => post.Reposts.Where(repost => repost.AuthorId == myId))
             .Where(post => post.RepostId == null);
@@ -134,6 +137,7 @@ namespace ERKAPI.Controllers
             .Include(post => post.PostData)
                 .ThenInclude(data => data.PostImages)
             .Include(post => post.Author)
+                .ThenInclude(author => author.Subscribers.Where(sub => sub.UserId == myId))
             .Include(post => post.Opinions.Where(opinion => opinion.UserId == myId))
             .Include(post => post.Reposts.Where(repost => repost.AuthorId == myId))
             .Include(post => post.Repost)
@@ -163,7 +167,7 @@ namespace ERKAPI.Controllers
             }
         }
 
-        private void MarkReposts(IEnumerable<Post> result, int myId) 
+        private void MarkRepostsAndAuthorSubs(IEnumerable<Post> result, int myId) 
         {
             foreach (var post in result)
                 post.MyId = myId;

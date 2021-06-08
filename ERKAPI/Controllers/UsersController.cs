@@ -72,14 +72,14 @@ namespace ERKAPI.Controllers
                 if (subscriptionExists)
                 {
                     _context.Subscriptions.Remove(subscription);
-                    subscriptionUser.SubscriberCount--;
-                    mySelf.SubscriptionCount--;
+                    RecountOpinions(mySelf, false, false);
+                    RecountOpinions(subscriptionUser, true, false);
                 }
                 else
                 {
                     subscriptionUser.Subscribers.Add(mySelf);
-                    subscriptionUser.SubscriberCount++;
-                    mySelf.SubscriptionCount++;
+                    RecountOpinions(mySelf, false, true);
+                    RecountOpinions(subscriptionUser, true, true);
                 }
                 subscriptionExists = !subscriptionExists;
             }
@@ -90,16 +90,16 @@ namespace ERKAPI.Controllers
                 if (forceState.Value && !subscriptionExists)
                 {
                     subscriptionUser.Subscribers.Add(mySelf);
-                    subscriptionUser.SubscriberCount++;
-                    mySelf.SubscriptionCount++;
+                    RecountOpinions(mySelf, false, true);
+                    RecountOpinions(subscriptionUser, true, true);
                     subscriptionExists = true;
                 }
                 //Отписаться, сейчас подписан
                 else if (!forceState.Value && subscriptionExists)
                 {
                     _context.Subscriptions.Remove(subscription);
-                    subscriptionUser.SubscriberCount--;
-                    mySelf.SubscriptionCount--;
+                    RecountOpinions(mySelf, false, false);
+                    RecountOpinions(subscriptionUser, true, false);
                     subscriptionExists = false;
                 }
             }
@@ -140,6 +140,24 @@ namespace ERKAPI.Controllers
             _context.SaveChanges();
 
             return Ok();
+        }
+
+        /// <summary>
+        /// Пересчитывает количество подписок и подписчиков
+        /// </summary>
+        /// <param name="user">Tracked сущность пользователя</param>
+        private void RecountOpinions(User user, bool subscriberOrSubscription, bool addedOrRemoved)
+        {
+            if (subscriberOrSubscription)
+            {
+                user.SubscriberCount = _context.Subscriptions.Where(sub => sub.SubscribedToId == user.UserId) 
+                                                            .Count() + (addedOrRemoved ? 1 : -1);
+            }
+            else
+            {
+                user.SubscriptionCount = _context.Subscriptions.Where(sub => sub.SubscriberId == user.UserId)
+                                                            .Count() + (addedOrRemoved ? 1 : -1);
+            }
         }
     }
 }

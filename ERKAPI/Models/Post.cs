@@ -52,9 +52,9 @@ namespace ERKAPI.Models
         public bool? MyOpinion { get => Opinions.Any() ? Opinions.First().LikeDislike : null; }
         [NotMapped]
         public bool RepostedByMe { get => IsOriginalPost ? Reposts.Any(repost => repost.AuthorId == MyId) : Repost.Reposts.Any(repost => repost.AuthorId == MyId); }
-        public bool ShouldSerializeLikes() => IsOriginalPost;
-        public bool ShouldSerializeDislikes() => IsOriginalPost;
-        public bool ShouldSerializeCreatedDate() => IsOriginalPost;
+        [NotMapped]
+        public bool SubscribedToAuthor { get => Author.Subscribers.Any(sub => sub.UserId == MyId); }
+
         public bool ShouldSerializeComments() => Comments.Any();
     }
 }
