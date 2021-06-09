@@ -29,6 +29,13 @@ namespace ERKAPI.Controllers
         {
             var myId = this.GetMyId();
 
+            var existingReport = _context.Reports.FirstOrDefault(rep => rep.AuthorId == myId && rep.PostId == report.PostId);
+
+            if (existingReport != null) 
+            {
+                return Forbid();
+            }
+
             report.AuthorId = myId;
 
             _context.Reports.Add(report);

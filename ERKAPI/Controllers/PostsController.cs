@@ -210,14 +210,24 @@ namespace ERKAPI.Controllers
         {
             var mySelf = Functions.identityToUser(User.Identity, _context, true);
 
-            var post = _context.Posts.Find(id);
+            var postToHide = _context.Posts.Include(post => post.Reposts)
+                                    .FirstOrDefault(post => post.PostId == id);
 
-            if (post == null) 
+            if (postToHide == null) 
             {
                 return NotFound();
             }
 
-            mySelf.BlacklistedPosts.Add(post);
+            mySelf.BlacklistedPosts.Add(postToHide);
+
+            //Если среди репостов есть мой - удалить
+            var myRepost = postToHide.Reposts.FirstOrDefault(post => post.AuthorId == mySelf.UserId);
+            if (myRepost != null) _context.Posts.Remove(myRepost);
+
+            foreach (var repost in postToHide.Reposts)
+            {
+                mySelf.BlacklistedPosts.Add(repost);
+            }
 
             _context.SaveChanges();
 
