@@ -30,7 +30,10 @@ namespace ERKAPI.Controllers
         [HttpGet]
         public ActionResult<User> GetProfileInfo(int id)
         {
-            var user = _context.Users.Find(id);
+            var myId = this.GetMyId();
+
+            var user = _context.Users.Include(user => user.Subscribers.Where(sub => sub.UserId == myId))
+                                    .FirstOrDefault(user => user.UserId == id);
 
             if (user == null)
             {
@@ -38,6 +41,8 @@ namespace ERKAPI.Controllers
             }
 
             user.ShowSubCount = true;
+            user.MyId = myId;
+
             return user;
         }
 
@@ -135,7 +140,7 @@ namespace ERKAPI.Controllers
             mySelf.Name = userData.Name;
             mySelf.Email = userData.Email;
             mySelf.DateOfBirth = userData.DateOfBirth;
-            mySelf.Avatar = userData.Avatar;
+            if(userData.Avatar != null) mySelf.Avatar = userData.Avatar;
 
             _context.SaveChanges();
 

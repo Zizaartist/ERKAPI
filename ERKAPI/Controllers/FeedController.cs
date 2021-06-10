@@ -170,7 +170,10 @@ namespace ERKAPI.Controllers
         private void MarkRepostsAndAuthorSubs(IEnumerable<Post> result, int myId) 
         {
             foreach (var post in result)
+            {
                 post.MyId = myId;
+                if (post.Author != null) post.Author.MyId = myId;
+            }
         }
     }
 }

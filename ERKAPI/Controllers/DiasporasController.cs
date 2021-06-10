@@ -20,6 +20,16 @@ namespace ERKAPI.Controllers
             _context = context;
         }
 
+        // GET: api/Diasporas/3
+        [Route("{id}")]
+        [HttpGet]
+        public ActionResult<Diaspora> Get(int id) 
+        {
+            var result = _context.Diasporas.Find(id);
+            result.ShowInfo = true;
+            return result;
+        }
+
         /// <summary>
         /// Получить все диаспоры
         /// </summary>
@@ -29,7 +39,7 @@ namespace ERKAPI.Controllers
         {
             IQueryable<Diaspora> diasporas = _context.Diasporas;
 
-            if (!diasporas.Any()) 
+            if (!diasporas.Any())
             {
                 return NotFound();
             }

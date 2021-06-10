@@ -51,6 +51,7 @@ namespace ERKAPI.Controllers
             }
 
             post.MyId = myId;
+            if(post.Author != null) post.Author.MyId = myId;
 
             return post;
         }

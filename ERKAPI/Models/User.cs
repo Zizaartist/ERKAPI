@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 
 #nullable disable
 
@@ -78,6 +79,11 @@ namespace ERKAPI.Models
         [JsonIgnore]
         [NotMapped]
         public bool ShowSubCount { get; set; } = false;
+        [JsonIgnore]
+        [NotMapped]
+        public int MyId { get; set; }
+        [NotMapped]
+        public bool Subscribed { get => Subscribers?.Any(sub => sub.UserId == MyId) ?? false; }
 
         public bool ShouldSerializePhone() => ShowSensitiveData;
         public bool ShouldSerializeEmail() => ShowSensitiveData;
