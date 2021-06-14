@@ -126,7 +126,7 @@ namespace ERKAPI.Controllers
 
         private IQueryable<Post> InitialQueryWithoutReposts(int myId) => _context.Posts
             .Include(post => post.PostData)
-                .ThenInclude(data => data.PostImages)
+                .ThenInclude(data => data.PostMedia)
             .Include(post => post.Author)
                 .ThenInclude(author => author.Subscribers.Where(sub => sub.UserId == myId))
             .Include(post => post.Opinions.Where(opinion => opinion.UserId == myId))
@@ -135,14 +135,14 @@ namespace ERKAPI.Controllers
 
         private IQueryable<Post> InitialQueryWithReposts(int myId) => _context.Posts
             .Include(post => post.PostData)
-                .ThenInclude(data => data.PostImages)
+                .ThenInclude(data => data.PostMedia)
             .Include(post => post.Author)
                 .ThenInclude(author => author.Subscribers.Where(sub => sub.UserId == myId))
             .Include(post => post.Opinions.Where(opinion => opinion.UserId == myId))
             .Include(post => post.Reposts.Where(repost => repost.AuthorId == myId))
             .Include(post => post.Repost)
                 .ThenInclude(repost => repost.PostData)
-                    .ThenInclude(data => data.PostImages)
+                    .ThenInclude(data => data.PostMedia)
             .Include(post => post.Repost)
                 .ThenInclude(repost => repost.Author)
             .Include(post => post.Repost)

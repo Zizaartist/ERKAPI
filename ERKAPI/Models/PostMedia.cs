@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ERKAPI.Models.EnumModels;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
@@ -6,13 +7,14 @@ using System.Collections.Generic;
 
 namespace ERKAPI.Models
 {
-    public partial class PostImage
+    public partial class PostMedia
     {
         [JsonIgnore]
-        public int PostImageId { get; set; }
+        public int PostMediaId { get; set; }
         [JsonIgnore]
         public int PostDataId { get; set; }
-        public string Image { get; set; }
+        public string Path { get; set; }
+        public MediaType MediaType { get; set; }
 
         [JsonIgnore]
         public virtual PostData PostData { get; set; }

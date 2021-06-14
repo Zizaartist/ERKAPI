@@ -25,7 +25,7 @@ namespace ERKAPI
         public virtual DbSet<Opinion> Opinions { get; set; }
         public virtual DbSet<Post> Posts { get; set; }
         public virtual DbSet<PostData> PostData { get; set; }
-        public virtual DbSet<PostImage> PostImages { get; set; }
+        public virtual DbSet<PostMedia> PostMedia { get; set; }
         public virtual DbSet<Report> Reports { get; set; }
         public virtual DbSet<Question> Questions { get; set; }
         public virtual DbSet<Subscription> Subscriptions { get; set; }
@@ -147,16 +147,16 @@ namespace ERKAPI
                     .HasConstraintName("FK_PostData_Post");
             });
 
-            modelBuilder.Entity<PostImage>(entity =>
+            modelBuilder.Entity<PostMedia>(entity =>
             {
-                entity.ToTable("PostImage");
+                entity.ToTable("PostMedia");
 
-                entity.Property(e => e.Image)
+                entity.Property(e => e.Path)
                     .IsRequired()
                     .HasMaxLength(15);
 
                 entity.HasOne(d => d.PostData)
-                    .WithMany(p => p.PostImages)
+                    .WithMany(p => p.PostMedia)
                     .HasForeignKey(d => d.PostDataId)
                     .HasConstraintName("FK_PostImage_PostData");
             });

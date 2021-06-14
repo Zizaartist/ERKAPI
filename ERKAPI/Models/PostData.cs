@@ -13,7 +13,7 @@ namespace ERKAPI.Models
     {
         public PostData()
         {
-            PostImages = new HashSet<PostImage>();
+            PostMedia = new HashSet<PostMedia>();
         }
 
         [JsonIgnore]
@@ -26,13 +26,13 @@ namespace ERKAPI.Models
 
         [JsonIgnore]
         public virtual Post Post { get; set; }
-        public virtual ICollection<PostImage> PostImages { get; set; }
+        public virtual ICollection<PostMedia> PostMedia { get; set; }
 
         [NotMapped]
         public bool HasHiddenText { get; set; } = false;
 
 
-        public bool ShouldSerializePostImages() => PostImages.Any();
+        public bool ShouldSerializePostImages() => PostMedia.Any();
         public bool ShouldSerializeHasHiddenText() => HasHiddenText;
     }
 }

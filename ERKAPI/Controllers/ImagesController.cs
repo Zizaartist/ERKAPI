@@ -21,11 +21,13 @@ namespace ERKAPI.Controllers
     {
         private readonly IWebHostEnvironment _appEnvironment;
         private readonly IConfiguration _configuration;
+        private readonly BlobServiceClient _blobServiceClient;
 
-        public ImagesController(IWebHostEnvironment appEnvironment, IConfiguration configuration)
+        public ImagesController(IWebHostEnvironment appEnvironment, IConfiguration configuration, BlobServiceClient blobServiceClient)
         {
             _appEnvironment = appEnvironment;
             _configuration = configuration;
+            _blobServiceClient = blobServiceClient;
         }
 
         // POST: api/Images/?useResize=True
@@ -116,7 +118,6 @@ namespace ERKAPI.Controllers
 
             image.Crop(cropSize);
             image.Format = MagickFormat.Jpg;
-
         }
 
         private async Task UploadToAzure(string containerName, string blobName, MemoryStream stream)

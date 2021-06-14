@@ -31,10 +31,10 @@ namespace ERKAPI.Controllers
             var myId = this.GetMyId();
 
             var post = _context.Posts.Include(post => post.PostData)
-                                        .ThenInclude(data => data.PostImages)
+                                        .ThenInclude(data => data.PostMedia)
                                     .Include(post => post.Repost)
                                         .ThenInclude(repost => repost.PostData)
-                                            .ThenInclude(data => data.PostImages)
+                                            .ThenInclude(data => data.PostMedia)
                                     .Include(post => post.Repost)
                                         .ThenInclude(repost => repost.Author)
                                     .Include(post => post.Repost)
