@@ -49,7 +49,7 @@ namespace ERKAPI.Controllers
         //Сам не знаю как работает, будем разжевывать
         [HttpPost]
         [DisableRequestSizeLimit]
-        public async Task<ActionResult<string>> UploadFile()
+        public async Task<ActionResult<IEnumerable<string>>> UploadFile()
         {
             //Какая-то проверка
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
@@ -69,7 +69,7 @@ namespace ERKAPI.Controllers
             var reader = new MultipartReader(boundary, HttpContext.Request.Body);
             var section = await reader.ReadNextSectionAsync();
 
-            string url = null;
+            List<string> urls = new List<string>();
 
             //Читаем пока не кончится
             while (section != null)
@@ -109,7 +109,7 @@ namespace ERKAPI.Controllers
                         //Отправляем поток файла-результата в облачное хранилище
                         using (var memStream = new MemoryStream(streamedFileContent))
                         {
-                            url = await AzureUpload(trustedFileNameForFileStorage, memStream);
+                            urls = await AzureUpload(trustedFileNameForFileStorage, memStream);
                         }
                     }
                 }
@@ -117,19 +117,10 @@ namespace ERKAPI.Controllers
                 section = await reader.ReadNextSectionAsync();
             }
 
-            return url;
+            return urls;
         }
 
-        [Route("asd")]
-        [HttpGet]
-        public async Task<ActionResult> Test() 
-        {
-            await AzureUpload("testasdqwe", null);
-
-            return Ok();
-        }
-
-        private async Task<string> AzureUpload(string fileName, MemoryStream stream) 
+        private async Task<List<string>> AzureUpload(string fileName, MemoryStream stream) 
         {
             //Отправляем полученный файл в blob
             string resourceGroup = _configuration["ResourceGroup"];
@@ -147,11 +138,11 @@ namespace ERKAPI.Controllers
             var encodingResult = await AzureHelper.WaitForJobToFinishAsync(client, resourceGroup, accountName, transform.Name, encodingJob.Name);
 
             var streamingLocator = await AzureHelper.CreateStreamingLocatorAsync(client, resourceGroup, accountName, outputAsset.Name, $"{fileName}Locator");
-            var url = await AzureHelper.GetStreamingUrlAsync(client, resourceGroup, accountName, streamingLocator.Name);
+            var urls = await AzureHelper.GetStreamingUrlAsync(client, resourceGroup, accountName, streamingLocator.Name);
 
             await AzureHelper.CleanUpAsync(client, resourceGroup, accountName, transform.Name, encodingJob.Name, inputAsset.Name, null);
 
-            return url;
+            return urls;
         }
     }
 }

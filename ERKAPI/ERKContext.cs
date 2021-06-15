@@ -153,7 +153,7 @@ namespace ERKAPI
 
                 entity.Property(e => e.Path)
                     .IsRequired()
-                    .HasMaxLength(15);
+                    .HasMaxLength(100);
 
                 entity.HasOne(d => d.PostData)
                     .WithMany(p => p.PostMedia)

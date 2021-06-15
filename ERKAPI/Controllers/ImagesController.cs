@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,18 +22,16 @@ namespace ERKAPI.Controllers
     {
         private readonly IWebHostEnvironment _appEnvironment;
         private readonly IConfiguration _configuration;
-        private readonly BlobServiceClient _blobServiceClient;
 
-        public ImagesController(IWebHostEnvironment appEnvironment, IConfiguration configuration, BlobServiceClient blobServiceClient)
+        public ImagesController(IWebHostEnvironment appEnvironment, IConfiguration configuration)
         {
             _appEnvironment = appEnvironment;
             _configuration = configuration;
-            _blobServiceClient = blobServiceClient;
         }
 
         // POST: api/Images/?useResize=True
         [HttpPost]
-        public async Task<ActionResult<string>> PostImage(IFormFile uploadedFile, bool useCrop = false)
+        public async Task<ActionResult<IEnumerable<string>>> PostImage(IFormFile uploadedFile, bool isAvatar = false)
         {
             if (uploadedFile == null)
             {
@@ -52,6 +51,8 @@ namespace ERKAPI.Controllers
             // путь к папке Files, ЗАМЕНИТЬ Path.GetTempFileName на более надежный генератор
             string newFileName = Path.GetFileNameWithoutExtension(Path.GetRandomFileName()) + ".jpg";
 
+            bool needsThumbnail = false;
+
             //Буфер для обработки файла без лишних действий (чтение, запись)
             using (var resultStream = new MemoryStream())
             {
@@ -60,9 +61,9 @@ namespace ERKAPI.Controllers
                 {
                     using (var image = new MagickImage(readStream))
                     {
-                        if (useCrop)
+                        if (isAvatar)
                         {
-                            CropAndResize(image);
+                            CropAndResizeAvatar(image);
                         }
                         //Записываем в буфер
                         image.Write(resultStream);
@@ -73,15 +74,45 @@ namespace ERKAPI.Controllers
                         ImageOptimizer optimizer = new ImageOptimizer();
                         optimizer.Compress(resultStream);
                     }
+
+                    readStream.Position = 0;
+
+                    if (!isAvatar)
+                    {
+                        using (var thumbnailStream = new MemoryStream())
+                        {
+                            using (var thumbnailImage = new MagickImage(readStream))
+                            {
+                                if (thumbnailImage.Width > Constants.THUMBNAIL_WIDTH ||
+                                    thumbnailImage.Height > Constants.THUMBNAIL_HEIGHT)
+                                {
+                                    needsThumbnail = true;
+
+                                    CropAndResizeThumbnail(thumbnailImage);
+
+                                    thumbnailImage.Write(thumbnailStream);
+
+                                    thumbnailStream.Position = 0; //Сбрасываем каретку
+
+                                    ImageOptimizer optimizer = new ImageOptimizer();
+                                    optimizer.Compress(thumbnailStream);
+                                }
+                            }
+
+                            //Отправляем поток файла-результата в облачное хранилище
+                            if (needsThumbnail) await UploadToAzure("erkimages", "postimages/thumbnail" + newFileName, thumbnailStream);
+                        }
+                    }
                 }
+
                 //Отправляем поток файла-результата в облачное хранилище
-                await UploadToAzure("erkimages", (useCrop ? "avatars/" : "postimages/") + newFileName, resultStream);
+                await UploadToAzure("erkimages", (isAvatar ? "avatars/" : "postimages/") + newFileName, resultStream);
             }
 
-            return newFileName;
+            return new List<string> { newFileName, $"{(needsThumbnail ? ("thumbnail" + newFileName) : null)}" };
         }
 
-        private void CropAndResize(MagickImage image)
+        private void CropAndResizeAvatar(MagickImage image)
         {
             int maxSize;
             MagickGeometry rescaleSize;
@@ -115,6 +146,26 @@ namespace ERKAPI.Controllers
             }
 
             cropSize = new MagickGeometry(xOffset, yOffset, maxSize, maxSize);
+
+            image.Crop(cropSize);
+            image.Format = MagickFormat.Jpg;
+        }
+
+        private void CropAndResizeThumbnail(MagickImage image)
+        {
+            var rescaleSize = new MagickGeometry();
+            rescaleSize.IgnoreAspectRatio = false;
+            rescaleSize.Width = Constants.THUMBNAIL_WIDTH;
+
+            image.Resize(rescaleSize);
+
+            var cropSize = new MagickGeometry();
+            cropSize.Width = Constants.THUMBNAIL_WIDTH;
+            cropSize.Height = Constants.THUMBNAIL_HEIGHT;
+
+            var difference = image.Height - Constants.THUMBNAIL_HEIGHT;
+            //Если высота больше 480, то половину разницы использовать для смещения
+            cropSize.Y = difference > 0 ? difference / 2 : 0;
 
             image.Crop(cropSize);
             image.Format = MagickFormat.Jpg;

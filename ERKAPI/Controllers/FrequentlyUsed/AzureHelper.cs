@@ -36,7 +36,7 @@ namespace ERKAPI.Controllers.FrequentlyUsed
             }
         }
 
-        public static async Task<string> GetStreamingUrlAsync(
+        public static async Task<List<string>> GetStreamingUrlAsync(
             IAzureMediaServicesClient client,
             string resourceGroupName,
             string accountName,
@@ -56,7 +56,8 @@ namespace ERKAPI.Controllers.FrequentlyUsed
 
             ListPathsResponse paths = await client.StreamingLocators.ListPathsAsync(resourceGroupName, accountName, locatorName);
 
-            return paths.DownloadPaths.FirstOrDefault(path => path.EndsWith(".mp4"));
+            return new List<string> { paths.DownloadPaths.FirstOrDefault(path => path.EndsWith(".mp4")), 
+                                    paths.DownloadPaths.FirstOrDefault(path => path.EndsWith(".jpg")) };
         }
 
         public static async Task<StreamingLocator> CreateStreamingLocatorAsync(
