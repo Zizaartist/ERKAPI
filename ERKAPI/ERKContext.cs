@@ -155,6 +155,10 @@ namespace ERKAPI
                     .IsRequired()
                     .HasMaxLength(100);
 
+                entity.Property(e => e.PreviewPath)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
                 entity.HasOne(d => d.PostData)
                     .WithMany(p => p.PostMedia)
                     .HasForeignKey(d => d.PostDataId)

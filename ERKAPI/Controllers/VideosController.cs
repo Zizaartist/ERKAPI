@@ -21,6 +21,12 @@ using Microsoft.Identity.Client;
 using Microsoft.Rest.Azure.Authentication;
 using Microsoft.Azure.Management.Media.Models;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
+using ERKAPI.Models;
+using ERKAPI.StaticValues;
+using ERKAPI.Models.EnumModels;
+using System.Text;
 
 namespace ERKAPI.Controllers
 {
@@ -38,19 +44,24 @@ namespace ERKAPI.Controllers
         private readonly IWebHostEnvironment _appEnvironment;
         private readonly IConfiguration _configuration;
         private readonly ConfigWrapper _configWrapper;
+        private readonly ERKContext _context;
 
-        public VideosController(IWebHostEnvironment appEnvironment, IConfiguration configuration, ConfigWrapper configWrapper)
+        public VideosController(IWebHostEnvironment appEnvironment, IConfiguration configuration, ConfigWrapper configWrapper, ERKContext context)
         {
             _appEnvironment = appEnvironment;
             _configuration = configuration;
             _configWrapper = configWrapper;
+            _context = context;
         }
 
         //Сам не знаю как работает, будем разжевывать
+        //Нужно отправлять в form-data значение id медиа файла в ключ postId и лишь потом сам файл
         [HttpPost]
         [DisableRequestSizeLimit]
-        public async Task<ActionResult<IEnumerable<string>>> UploadFile()
+        public async Task<ActionResult> UploadFile()
         {
+            Post post = null;
+
             //Какая-то проверка
             if (!MultipartRequestHelper.IsMultipartContentType(Request.ContentType))
             {
@@ -83,11 +94,38 @@ namespace ERKAPI.Controllers
                     if (!MultipartRequestHelper
                         .HasFileContentDisposition(contentDisposition))
                     {
-                        ModelState.AddModelError("File",
-                            $"The request couldn't be processed (Error 2).");
-                        // Log error
+                        if (contentDisposition.Name.Value == "postId")
+                        {
+                            int postId = -1;
+                            using (var memoryStream = new MemoryStream())
+                            {
+                                await section.Body.CopyToAsync(memoryStream);
+                                postId = int.Parse(Encoding.UTF8.GetString(memoryStream.ToArray()));
+                            }
 
-                        return BadRequest(ModelState);
+                            //Проверяем существование и право на создание
+                            var myId = this.GetMyId();
+
+                            post = _context.Posts.Include(p => p.PostData)
+                                                .FirstOrDefault(p => p.PostId == postId);
+
+                            if (post == null)
+                            {
+                                return NotFound();
+                            }
+                            if (post.AuthorId != myId)
+                            {
+                                return Forbid();
+                            }
+                        }
+                        else
+                        {
+                            ModelState.AddModelError("File",
+                                $"The request couldn't be processed (Error 2).");
+                            // Log error
+
+                            return BadRequest(ModelState);
+                        }
                     }
                     else
                     {
@@ -109,7 +147,7 @@ namespace ERKAPI.Controllers
                         //Отправляем поток файла-результата в облачное хранилище
                         using (var memStream = new MemoryStream(streamedFileContent))
                         {
-                            urls = await AzureUpload(trustedFileNameForFileStorage, memStream);
+                            await AzureUpload(trustedFileNameForFileStorage, memStream, post);
                         }
                     }
                 }
@@ -117,32 +155,43 @@ namespace ERKAPI.Controllers
                 section = await reader.ReadNextSectionAsync();
             }
 
-            return urls;
+            return Ok();
         }
 
-        private async Task<List<string>> AzureUpload(string fileName, MemoryStream stream) 
+        private async Task AzureUpload(string fileName, MemoryStream stream, Post post)
         {
+            //Временно устанавливаем тип медиа на "изображение" и ставим готовую картинку
+            var newMediaFile = new PostMedia
+            {
+                MediaType = MediaType.image,
+                PreviewPath = Constants.VIDEO_MISSING_IMAGE,
+                Path = Constants.VIDEO_MISSING_IMAGE
+            };
+            post.PostData.PostMedia.Add(newMediaFile);
+            _context.SaveChanges();
+
             //Отправляем полученный файл в blob
             string resourceGroup = _configuration["ResourceGroup"];
             string accountName = _configuration["AccountName"];
             string transformName = _configuration["VideoEncoderName"];
 
-            var client = await AzureHelper.CreateMediaServicesClientAsync(_configWrapper);
+            try
+            {
+                var client = await AzureHelper.CreateMediaServicesClientAsync(_configWrapper);
 
-            var inputAsset = await AzureHelper.CreateInputAssetAsync(client, resourceGroup, accountName, fileName, stream);
-            var outputAsset = await AzureHelper.CreateOutputAssetAsync(client, resourceGroup, accountName, fileName);
+                var inputAsset = await AzureHelper.CreateInputAssetAsync(client, resourceGroup, accountName, fileName, stream);
+                var outputAsset = await AzureHelper.CreateOutputAssetAsync(client, resourceGroup, accountName, fileName);
 
-            var transform = await AzureHelper.GetOrCreateTransformAsync(client, resourceGroup, accountName, transformName);
+                var transform = await AzureHelper.GetOrCreateTransformAsync(client, resourceGroup, accountName, transformName);
 
-            var encodingJob = await AzureHelper.SubmitJobAsync(client, resourceGroup, accountName, transform.Name, $"{fileName}Encoding", inputAsset.Name, outputAsset.Name);
-            var encodingResult = await AzureHelper.WaitForJobToFinishAsync(client, resourceGroup, accountName, transform.Name, encodingJob.Name);
-
-            var streamingLocator = await AzureHelper.CreateStreamingLocatorAsync(client, resourceGroup, accountName, outputAsset.Name, $"{fileName}Locator");
-            var urls = await AzureHelper.GetStreamingUrlAsync(client, resourceGroup, accountName, streamingLocator.Name);
-
-            await AzureHelper.CleanUpAsync(client, resourceGroup, accountName, transform.Name, encodingJob.Name, inputAsset.Name, null);
-
-            return urls;
+                await AzureHelper.SubmitJobAsync(client, resourceGroup, accountName, transform.Name, $"{fileName}Encoding", inputAsset.Name, outputAsset.Name, newMediaFile.PostMediaId);
+            }
+            //Если произошла ошибка - удалить болванку
+            catch 
+            {
+                _context.PostMedia.Remove(newMediaFile);
+                _context.SaveChanges();
+            }
         }
     }
 }

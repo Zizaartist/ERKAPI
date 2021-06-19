@@ -116,28 +116,29 @@ namespace ERKAPI.Controllers.FrequentlyUsed
             return job;
         }
 
-        public static async Task<Job> SubmitJobAsync(IAzureMediaServicesClient client,
+        public static async Task SubmitJobAsync(IAzureMediaServicesClient client,
             string resourceGroupName,
             string accountName,
             string transformName,
             string jobName,
             string inputAssetName,
-            string outputAssetName)
+            string outputAssetName,
+            int orderMediaId)
         {
             // Use the name of the created input asset to create the job input.
             JobInput jobInput = new JobInputAsset(assetName: inputAssetName);
 
             JobOutput[] jobOutputs =
             {
-        new JobOutputAsset(outputAssetName),
-    };
+                new JobOutputAsset(outputAssetName),
+            };
 
             // In this example, we are assuming that the job name is unique.
             //
             // If you already have a job with the desired name, use the Jobs.Get method
             // to get the existing job. In Media Services v3, the Get method on entities returns null 
             // if the entity doesn't exist (a case-insensitive check on the name).
-            Job job = await client.Jobs.CreateAsync(
+            await client.Jobs.CreateAsync(
                 resourceGroupName,
                 accountName,
                 transformName,
@@ -146,9 +147,12 @@ namespace ERKAPI.Controllers.FrequentlyUsed
                 {
                     Input = jobInput,
                     Outputs = jobOutputs,
+                    CorrelationData = new Dictionary<string, string> 
+                    { 
+                        { "postMediaId", orderMediaId.ToString() },
+                        { "inputAssetName", inputAssetName }
+                    }
                 });
-
-            return job;
         }
 
         public static async Task<Transform> GetOrCreateTransformAsync(

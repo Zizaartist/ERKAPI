@@ -109,7 +109,7 @@ namespace ERKAPI.Controllers
                 await UploadToAzure("erkimages", (isAvatar ? "avatars/" : "postimages/") + newFileName, resultStream);
             }
 
-            return new List<string> { newFileName, $"{(needsThumbnail ? ("thumbnail" + newFileName) : null)}" };
+            return new List<string> { newFileName, $"{(isAvatar ? null : ((needsThumbnail ? "thumbnail" : "") + newFileName))}" };
         }
 
         private void CropAndResizeAvatar(MagickImage image)
