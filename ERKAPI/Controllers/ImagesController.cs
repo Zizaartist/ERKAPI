@@ -1,15 +1,19 @@
 ﻿using Azure.Identity;
 using Azure.Storage.Blobs;
+using ERKAPI.Models;
+using ERKAPI.Models.EnumModels;
 using ERKAPI.StaticValues;
 using ImageMagick;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -18,21 +22,42 @@ namespace ERKAPI.Controllers
     [ApiController]
     [Authorize]
     [Route("api/[controller]")]
-    public class ImagesController : ControllerBase
+    public class ImagesController : Controller
     {
         private readonly IWebHostEnvironment _appEnvironment;
         private readonly IConfiguration _configuration;
+        private readonly ERKContext _context;
 
-        public ImagesController(IWebHostEnvironment appEnvironment, IConfiguration configuration)
+        public ImagesController(IWebHostEnvironment appEnvironment, IConfiguration configuration, ERKContext context)
         {
             _appEnvironment = appEnvironment;
             _configuration = configuration;
+            _context = context;
         }
 
         // POST: api/Images/?useResize=True
         [HttpPost]
-        public async Task<ActionResult<IEnumerable<string>>> PostImage(IFormFile uploadedFile, bool isAvatar = false)
+        public async Task<ActionResult> PostImage(IFormFile uploadedFile, int? postId = null, bool isAvatar = false)
         {
+            Post post = null;
+            if (postId != null)
+            {
+                //Проверяем существование и право на создание
+                var myId = this.GetMyId();
+
+                post = _context.Posts.Include(p => p.PostData)
+                                        .FirstOrDefault(p => p.PostId == postId);
+
+                if (post == null)
+                {
+                    return NotFound();
+                }
+                if (post.AuthorId != myId)
+                {
+                    return Forbid();
+                }
+            }
+
             if (uploadedFile == null)
             {
                 return BadRequest();
@@ -109,7 +134,19 @@ namespace ERKAPI.Controllers
                 await UploadToAzure("erkimages", (isAvatar ? "avatars/" : "postimages/") + newFileName, resultStream);
             }
 
-            return new List<string> { newFileName, $"{(isAvatar ? null : ((needsThumbnail ? "thumbnail" : "") + newFileName))}" };
+            if (postId != null)
+            {
+                var newImage = new PostMedia
+                {
+                    MediaType = MediaType.image,
+                    Path = newFileName,
+                    PreviewPath = ((needsThumbnail ? "thumbnail" : "") + newFileName)
+                };
+                post.PostData.PostMedia.Add(newImage);
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(newFileName);
         }
 
         private void CropAndResizeAvatar(MagickImage image)
