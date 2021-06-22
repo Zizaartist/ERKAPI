@@ -37,7 +37,7 @@ namespace ERKAPI.Controllers
 
         // POST: api/Images/?useResize=True
         [HttpPost]
-        public async Task<ActionResult> PostImage(IFormFile uploadedFile, int? postId = null, bool isAvatar = false)
+        public async Task<ActionResult<string>> PostImage(IFormFile uploadedFile, int? postId = null, bool isAvatar = false)
         {
             Post post = null;
             if (postId != null)
@@ -146,7 +146,7 @@ namespace ERKAPI.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            return Ok(newFileName);
+            return newFileName;
         }
 
         private void CropAndResizeAvatar(MagickImage image)

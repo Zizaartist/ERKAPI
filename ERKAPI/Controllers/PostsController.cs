@@ -61,7 +61,7 @@ namespace ERKAPI.Controllers
         /// </summary>
         // POST: api/Posts/
         [HttpPost]
-        public ActionResult PublishPost(PostData postData)
+        public ActionResult<int> PublishPost(PostData postData)
         {
             var myId = this.GetMyId();
 
@@ -75,7 +75,7 @@ namespace ERKAPI.Controllers
             _context.Posts.Add(newPost);
             _context.SaveChanges();
 
-            return Ok();
+            return newPost.PostId;
         }
 
         /// <summary>
